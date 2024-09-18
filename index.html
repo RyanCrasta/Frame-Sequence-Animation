@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body>
+    <div class="w-full bg-zinc-900">
+      <div id="canvasCtn" class="parent relative top-0 left-0 w-full h-[700vh]">
+        <div class="w-full sticky top-0 left-0 h-screen">
+          <canvas class="w-full h-screen" id="frame"> </canvas>
+        </div>
+      </div>
+    </div>
+
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"
+      integrity="sha512-7eHRwcbYkK4d9g/6tD/mhkf++eoTHwpNM9woBxtPUBWm67zeAfFC+HrdoE2GanKeocly/VxeLvIqwvCdk7qScg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"
+      integrity="sha512-onMTRKJBKz8M1TnqqDuGBlowlH0ohFzMXYRNebz+yOcc5TQr/zAKsthzhuv0hiyUKEiQEQXEynnXCvNTOk50dg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+
+    <script>
+      const canvas = document.querySelector("canvas");
+      const context = canvas.getContext("2d");
+
+      const frames = {
+        currentIndex: 1,
+        maximumIndex: 382, // Adjust if needed for the correct number of images
+      };
+
+      let imagesLoaded = 0;
+      const images = [];
+
+      function loadImage(index) {
+        // Check if the index is within bounds and load only if different from the current image
+        if (index >= 1 && index <= frames.maximumIndex) {
+          const img = images[index];
+
+          console.log(img);
+
+          // Wait for the image to be fully loaded before drawing
+          if (img.complete) {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const scaleX = canvas.width / img.width;
+            const scaleY = canvas.height / img.height;
+
+            const scale = Math.max(scaleX, scaleY);
+
+            const newWidth = img.width * scale;
+            const newHeight = img.height * scale;
+
+            const offsetX = (canvas.width - newWidth) / 2;
+            const offsetY = (canvas.height - newHeight) / 2;
+
+            // Clear canvas before drawing new image
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            context.imageSmoothingEnabled = true;
+            context.imageSmoothingQuality = "high";
+            context.drawImage(img, offsetX, offsetY, newWidth, newHeight);
+
+            console.log(`Image ${index} loaded and drawn`);
+          }
+        } else {
+          console.log(`Image ${index} is not fully loaded.`);
+        }
+      }
+
+      function preloadImages() {
+        for (let i = 1; i <= frames.maximumIndex; i++) {
+          const imageUrl = `./frameImages/frame_${i
+            .toString()
+            .padStart(4, "0")}.jpeg`;
+          const img = new Image();
+          img.src = imageUrl;
+
+          img.onload = () => {
+            imagesLoaded++;
+            if (imagesLoaded === frames.maximumIndex) {
+              console.log("All images loaded");
+
+              // Load the first image once all are preloaded
+              loadImage(frames.currentIndex);
+              startAnimation();
+            }
+          };
+
+          images.push(img);
+        }
+      }
+
+      function startAnimation() {
+        gsap.registerPlugin(ScrollTrigger);
+
+        ScrollTrigger.create({
+          trigger: "#canvasCtn", // Scrollable element
+          start: "top 0%",
+          end: "bottom bottom",
+          scrub: 2,
+          markers: true, // Optional: Use this to see where the start/end points are
+          onUpdate: (self) => {
+            const progress = self.progress; // Scroll progress value between 0 and 1
+            const frameIndex = Math.floor(progress * (frames.maximumIndex - 1)); // Calculate the correct frame index
+            // console.log(
+            //   `Scroll progress: ${progress}, frameIndex: ${frameIndex}`
+            // );
+            loadImage(frameIndex); // Update canvas with the correct image
+          },
+        });
+      }
+
+      // Preload images and start the animation
+      preloadImages();
+    </script>
+  </body>
+</html>
